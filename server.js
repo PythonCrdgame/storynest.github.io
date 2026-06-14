@@ -22,6 +22,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname)));  // Serve files from root too
 
 // MongoDB Atlas connection
 const MONGODB_URI = process.env.MONGODB_URI;
