@@ -239,136 +239,135 @@
     </div>
   </div>
 
-  <script>
-    let currentUser = null;
+<script>
+  let currentUser = null;
 
-    // Check authentication status
-    async function checkAuth() {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const data = await response.json();
-          currentUser = data.user;
-          showAuthenticatedUI();
-        } else {
-          showUnauthenticatedUI();
-        }
-      } catch (error) {
+  // Check authentication status
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        currentUser = data.user;
+        showAuthenticatedUI();
+      } else {
         showUnauthenticatedUI();
       }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      showUnauthenticatedUI();
+    }
+  }
+
+  function showAuthenticatedUI() {
+    document.getElementById('navButtons').classList.add('hidden');
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('addBookForm').classList.remove('hidden');
+    document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
+    document.getElementById('userAvatar').textContent = currentUser.avatar || '📚';
+  }
+
+  function showUnauthenticatedUI() {
+    document.getElementById('navButtons').classList.remove('hidden');
+    document.getElementById('userInfo').classList.add('hidden');
+    document.getElementById('addBookForm').classList.add('hidden');
+  }
+
+  // Load books
+  async function loadBooks() {
+    try {
+      const response = await fetch('/api/books');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const books = await response.json();
+      displayBooks(books);
+    } catch (error) {
+      console.error('Error loading books:', error);
+      document.getElementById('booksGrid').innerHTML = '<p>Error loading books. Please try again.</p>';
+    }
+  }
+
+  function displayBooks(books) {
+    const grid = document.getElementById('booksGrid');
+    if (!books || books.length === 0) {
+      grid.innerHTML = '<p>No books in the library yet. Add some books!</p>';
+      return;
     }
 
-    function showAuthenticatedUI() {
-      document.getElementById('navButtons').classList.add('hidden');
-      document.getElementById('userInfo').classList.remove('hidden');
-      document.getElementById('addBookForm').classList.remove('hidden');
-      document.getElementById('userName').textContent = currentUser.fullName || currentUser.username;
-      document.getElementById('userAvatar').textContent = currentUser.avatar || '📚';
+    grid.innerHTML = books.map(book => `
+      <div class="book-card">
+        <div class="book-icon">${book.coverIcon || '📖'}</div>
+        <div class="book-title">${escapeHtml(book.title)}</div>
+        <div class="book-author">by ${escapeHtml(book.author)}</div>
+        <div style="margin-top: 10px; font-size: 12px; color: #999;">${escapeHtml(book.age) || 'All ages'}</div>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/[&<>"]/g, function(m) {
+      if (m === '&') return '&amp;';
+      if (m === '<') return '&lt;';
+      if (m === '>') return '&gt;';
+      if (m === '"') return '&quot;';
+      return m;
+    });
+  }
+
+  // Add book
+  async function addBook() {
+    if (!currentUser) {
+      alert('Please login to add books');
+      return;
     }
 
-    function showUnauthenticatedUI() {
-      document.getElementById('navButtons').classList.remove('hidden');
-      document.getElementById('userInfo').classList.add('hidden');
-      document.getElementById('addBookForm').classList.add('hidden');
+    const title = document.getElementById('bookTitle').value;
+    const author = document.getElementById('bookAuthor').value;
+    const age = document.getElementById('bookAge').value;
+    const genre = document.getElementById('bookGenre').value;
+
+    if (!title || !author) {
+      alert('Title and author are required');
+      return;
     }
 
-    // Load books
-    async function loadBooks() {
-      try {
-        const response = await fetch('/api/books');
-        const books = await response.json();
-        displayBooks(books);
-      } catch (error) {
-        showMessage('Error loading books', 'error');
+    try {
+      const response = await fetch('/api/books', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, author, age, genre })
+      });
+
+      if (response.ok) {
+        alert('Book added!');
+        document.getElementById('bookTitle').value = '';
+        document.getElementById('bookAuthor').value = '';
+        loadBooks();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to add book');
       }
+    } catch (error) {
+      alert('Error adding book');
     }
+  }
 
-    function displayBooks(books) {
-      const grid = document.getElementById('booksGrid');
-      if (books.length === 0) {
-        grid.innerHTML = '<p>No books in the library yet. Be the first to add one!</p>';
-        return;
-      }
-
-      grid.innerHTML = books.map(book => `
-        <div class="book-card">
-          <div class="book-icon">${book.coverIcon || '📖'}</div>
-          <div class="book-title">${book.title}</div>
-          <div class="book-author">by ${book.author}</div>
-          <div style="margin-top: 10px; font-size: 12px; color: #999;">${book.age || 'All ages'}</div>
-          ${book.genre ? `<div style="margin-top: 5px; font-size: 12px; color: #667eea;">${book.genre}</div>` : ''}
-        </div>
-      `).join('');
+  // Logout
+  async function logout() {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      currentUser = null;
+      showUnauthenticatedUI();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout error:', error);
     }
+  }
 
-    // Add book
-    async function addBook() {
-      if (!currentUser) {
-        showMessage('Please login to add books', 'error');
-        return;
-      }
+  // Initialize
+  checkAuth();
+  loadBooks();
+</script>  
 
-      const title = document.getElementById('bookTitle').value;
-      const author = document.getElementById('bookAuthor').value;
-      const age = document.getElementById('bookAge').value;
-      const genre = document.getElementById('bookGenre').value;
-
-      if (!title || !author) {
-        showMessage('Title and author are required', 'error');
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/books', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ title, author, age, genre })
-        });
-
-        if (response.ok) {
-          showMessage('Book added successfully!', 'success');
-          document.getElementById('bookTitle').value = '';
-          document.getElementById('bookAuthor').value = '';
-          document.getElementById('bookAge').value = 'All ages';
-          document.getElementById('bookGenre').value = '';
-          loadBooks();
-        } else {
-          const error = await response.json();
-          showMessage(error.error || 'Failed to add book', 'error');
-        }
-      } catch (error) {
-        showMessage('Error adding book', 'error');
-      }
-    }
-
-    // Logout
-    async function logout() {
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        currentUser = null;
-        showUnauthenticatedUI();
-        showMessage('Logged out successfully', 'success');
-        window.location.href = '/';
-      } catch (error) {
-        showMessage('Error logging out', 'error');
-      }
-    }
-
-    function showMessage(text, type) {
-      const messageDiv = document.getElementById('message');
-      messageDiv.textContent = text;
-      messageDiv.className = `message ${type}`;
-      setTimeout(() => {
-        messageDiv.textContent = '';
-        messageDiv.className = '';
-      }, 3000);
-    }
-
-    // Initialize
-    checkAuth();
-    loadBooks();
-  </script>
 </body>
 </html>
