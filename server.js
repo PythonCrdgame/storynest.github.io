@@ -24,8 +24,7 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, 'public')));
 
 // MongoDB Atlas connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://demoUser:demoPass@cluster0.abcdef.mongodb.net/storynest?retryWrites=true&w=majority';
-
+const MONGODB_URI = process.env.MONGODB_URI || 'your-backup-connection-string';
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
