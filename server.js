@@ -24,7 +24,12 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, 'public')));
 
 // MongoDB Atlas connection
-const MONGODB_URI = process.env.MONGODB_URI || 'your-backup-connection-string';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI is not defined in environment variables');
+  process.exit(1);
+}
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
