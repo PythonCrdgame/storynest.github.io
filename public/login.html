@@ -134,35 +134,39 @@
   </div>
 
   <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorDiv = document.getElementById('errorMessage');
-      
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password })
-        });
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorDiv = document.getElementById('errorMessage');
+    
+    errorDiv.style.display = 'none';
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'  // Important for cookies
+      });
 
-        const data = await response.json();
-        
-        if (response.ok) {
-          window.location.href = '/';
-        } else {
-          errorDiv.textContent = data.error || 'Login failed';
-          errorDiv.style.display = 'block';
-        }
-      } catch (error) {
-        errorDiv.textContent = 'Network error. Please try again.';
+      const data = await response.json();
+      
+      if (response.ok) {
+        window.location.href = '/';
+      } else {
+        errorDiv.textContent = data.error || 'Login failed';
         errorDiv.style.display = 'block';
       }
-    });
-  </script>
+    } catch (error) {
+      errorDiv.textContent = 'Network error. Please try again.';
+      errorDiv.style.display = 'block';
+      console.error('Login error:', error);
+    }
+  });
+</script>
 </body>
 </html>
